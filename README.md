@@ -7,7 +7,7 @@ Repositorio de configuración para desplegar **n8n** (automation workflow tool) 
 - Cluster k3s (v1.28+) - ✅ **Detectado: v1.34.6+k3s1**
 - kubectl configurado
 - Helm 3.x
-- **cert-manager** - ✅ **Ya instalado (letsencrypt-prod, letsencrypt-staging configurados)**
+- **cert-manager** - ✅ **Ya instalado (letsencrypt-prod configurado)**
 - **external-dns** - ✅ **Ya instalado**
 - Acceso DNS configurado para los dominios:
   - `n8n-dev.qforexwin.com` (dev)

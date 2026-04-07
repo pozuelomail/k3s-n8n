@@ -44,20 +44,20 @@ fi
 
 echo ""
 echo "=========================================="
-echo "Verificando ClusterIssuers..."
+echo "Verificando ClusterIssuer..."
 echo "=========================================="
 
-# Verificar si los ClusterIssuers ya existen
-if kubectl get clusterissuer letsencrypt-prod &>/dev/null && kubectl get clusterissuer letsencrypt-staging &>/dev/null; then
-    echo "✓ ClusterIssuers ya configurados:"
+# Verificar si el ClusterIssuer ya existe
+if kubectl get clusterissuer letsencrypt-prod &>/dev/null; then
+    echo "✓ ClusterIssuer letsencrypt-prod ya configurado"
     kubectl get clusterissuer
     echo ""
-    echo "Usando ClusterIssuers existentes..."
+    echo "Usando ClusterIssuer existente..."
 else
-    echo "Aplicando ClusterIssuers..."
+    echo "Aplicando ClusterIssuer..."
     kubectl apply -f "${REPO_ROOT}/manifests/cert-manager/"
     echo ""
-    echo "ClusterIssuers configurados:"
+    echo "ClusterIssuer configurado:"
     kubectl get clusterissuer
 fi
 
@@ -66,7 +66,6 @@ echo "=========================================="
 echo "cert-manager configurado correctamente"
 echo "=========================================="
 echo ""
-echo "IMPORTANTE: Actualizar el email en los ClusterIssuers"
+echo "IMPORTANTE: Actualizar el email en el ClusterIssuer"
 echo "antes de usar Let's Encrypt en producción:"
 echo "  kubectl edit clusterissuer letsencrypt-prod"
-echo "  kubectl edit clusterissuer letsencrypt-staging"
