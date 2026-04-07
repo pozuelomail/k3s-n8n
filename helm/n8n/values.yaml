@@ -1,0 +1,81 @@
+# Valores base del chart n8n
+# Sobreescribir con values-dev.yaml, values-pre.yaml, values-pro.yaml según el entorno
+
+environment: dev
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace:
+  create: false
+  name: n8n
+
+replicaCount: 1
+
+image:
+  repository: n8nio/n8n
+  pullPolicy: IfNotPresent
+  tag: ""
+
+service:
+  type: ClusterIP
+  port: 5678
+
+ingress:
+  enabled: true
+  className: traefik
+  host: n8n.qforexwin.com
+  annotations:
+    # external-dns ya está instalado - se auto-configurará
+    external-dns.alpha.kubernetes.io/hostname: n8n.qforexwin.com
+  certManager:
+    issuer: letsencrypt-prod  # Usar el ClusterIssuer existente
+
+persistence:
+  enabled: true
+  size: 10Gi
+  accessMode: ReadWriteOnce
+  storageClass: local-path
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+n8n:
+  basicAuth:
+    enabled: true
+    username: admin
+    password: CHANGEME
+  encryptionKey: ""
+  executions:
+    mode: regular
+    timeout: 3600
+    timeoutMax: 7200
+
+env: {}
+
+# Configuración de PostgreSQL subchart
+postgresql:
+  enabled: true
+  auth:
+    host: ""
+    username: n8n
+    password: CHANGEME
+    database: n8n
+    existingSecret: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: local-path
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi

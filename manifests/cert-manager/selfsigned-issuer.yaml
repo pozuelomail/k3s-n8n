@@ -1,0 +1,10 @@
+# ============================================
+# ClusterIssuer Self-Signed
+# Para pruebas locales sin acceso a Internet
+# ============================================
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}

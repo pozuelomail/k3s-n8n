@@ -1,0 +1,62 @@
+# ============================================
+# VALUES PARA ENTORNO DE DESARROLLO (dev)
+# ============================================
+
+environment: dev
+
+namespace:
+  create: true
+  name: n8n-dev
+
+replicaCount: 1
+
+image:
+  tag: "latest"
+
+ingress:
+  enabled: true
+  className: traefik
+  host: n8n-dev.qforexwin.com
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: n8n-dev.qforexwin.com
+  certManager:
+    issuer: letsencrypt-staging  # Usar el ClusterIssuer existente
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: local-path
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+n8n:
+  basicAuth:
+    enabled: true
+    username: admin
+    password: dev-password-change-me
+  encryptionKey: dev-encryption-key-change-me-32chars!!
+
+postgresql:
+  enabled: true
+  auth:
+    username: n8n_dev
+    password: dev-db-password-change-me
+    database: n8n_dev
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: local-path
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi

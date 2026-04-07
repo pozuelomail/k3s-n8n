@@ -1,0 +1,78 @@
+# ============================================
+# VALUES PARA ENTORNO DE PRODUCCIÓN (pro)
+# ============================================
+
+environment: pro
+
+namespace:
+  create: true
+  name: n8n-pro
+
+replicaCount: 2
+
+image:
+  tag: "1.50.0"
+
+ingress:
+  enabled: true
+  className: traefik
+  host: n8n.qforexwin.com
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: n8n.qforexwin.com
+    # Rate limiting para producción
+    traefik.ingress.kubernetes.io/ratelimit.average: "100"
+    traefik.ingress.kubernetes.io/ratelimit.burst: "50"
+  certManager:
+    issuer: letsencrypt-prod  # Usar el ClusterIssuer existente
+  annotations:
+    # Rate limiting para producción
+    traefik.ingress.kubernetes.io/ratelimit.average: "100"
+    traefik.ingress.kubernetes.io/ratelimit.burst: "50"
+
+persistence:
+  enabled: true
+  size: 50Gi
+  storageClass: local-path
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+n8n:
+  basicAuth:
+    enabled: true
+    username: admin
+    password: PRODUCTION_SECURE_PASSWORD_CHANGE_ME
+  encryptionKey: PRODUCTION_ENCRYPTION_KEY_CHANGE_ME_32CH
+  executions:
+    mode: regular
+    timeout: 3600
+    timeoutMax: 7200
+
+env:
+  # Configuraciones adicionales de producción
+  N8N_LOG_LEVEL: warn
+  N8N_METRICS: "true"
+
+postgresql:
+  enabled: true
+  auth:
+    username: n8n_pro
+    password: PRODUCTION_DB_PASSWORD_CHANGE_ME
+    database: n8n_pro
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: local-path
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi

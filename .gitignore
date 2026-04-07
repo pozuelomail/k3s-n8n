@@ -1,0 +1,47 @@
+# ============================================
+# Gitignore para k3s-n8n
+# ============================================
+
+# Secrets y configuraciones locales
+.env
+.env.local
+.env.*.local
+*.secret.yaml
+*.secret.yml
+!*.secret.yaml.example
+!*.secret.yml.example
+
+# Backups
+backups/
+*.sql
+*.sql.gz
+*.tar.gz
+*.backup
+
+# Helm
+*.tgz
+charts/*.tgz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporales
+tmp/
+temp/
+*.tmp
+
+# Kubernetes
+kubeconfig*
+*.kubeconfig
