@@ -20,7 +20,7 @@ ingress:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: n8n-dev.qforexwin.com
   certManager:
-    issuer: letsencrypt-staging  # Usar el ClusterIssuer existente
+    issuer: letsencrypt-prod  # Usar el ClusterIssuer de producción
 
 persistence:
   enabled: true

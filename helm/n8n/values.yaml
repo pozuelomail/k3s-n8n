@@ -29,7 +29,7 @@ ingress:
     # external-dns ya está instalado - se auto-configurará
     external-dns.alpha.kubernetes.io/hostname: n8n.qforexwin.com
   certManager:
-    issuer: letsencrypt-prod  # Usar el ClusterIssuer existente
+    issuer: letsencrypt-prod  # Todos los entornos usan letsencrypt-prod
 
 persistence:
   enabled: true
