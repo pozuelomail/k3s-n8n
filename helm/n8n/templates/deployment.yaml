@@ -32,17 +32,17 @@ spec:
             - name: N8N_BASIC_AUTH_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "n8n.fullname" . }}-auth
+                  name: {{ include "n8n.authSecretName" . }}
                   key: username
             - name: N8N_BASIC_AUTH_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "n8n.fullname" . }}-auth
+                  name: {{ include "n8n.authSecretName" . }}
                   key: password
             - name: N8N_ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "n8n.fullname" . }}-auth
+                  name: {{ include "n8n.authSecretName" . }}
                   key: encryptionKey
             - name: DB_TYPE
               value: postgresdb

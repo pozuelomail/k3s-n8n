@@ -35,18 +35,24 @@ resources:
     cpu: 500m
     memory: 1Gi
 
+# ============================================
+# VALUES PARA ENTORNO DE PREPRODUCCIÓN (pre)
+# Las credenciales se leen de Secrets de Kubernetes
+# ============================================
+
 n8n:
   basicAuth:
     enabled: true
-    username: admin
-    password: pre-password-change-me
-  encryptionKey: pre-encryption-key-change-me-32chars!!
+  # Los Secrets se crean con: source ~/.env && ./scripts/create-secrets.sh pre
+  existingAuthSecret: "n8n-pre-auth"
 
 postgresql:
   enabled: true
   auth:
+    # Secret creado previamente
+    existingSecret: "pre-postgresql"
+    # Valores para referencia (no se usan si existingSecret está definido)
     username: n8n_pre
-    password: pre-db-password-change-me
     database: n8n_pre
   primary:
     persistence:

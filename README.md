@@ -59,14 +59,23 @@ kubectl get pods -n external-dns
 
 > **Nota**: Tu cluster ya tiene cert-manager y external-dns instalados. No es necesario volver a instalarlos.
 
-### 3. Configurar credenciales
+### 3. Crear Secrets de Kubernetes (desde ~/.env)
 
-**IMPORTANTE:** Antes de desplegar, edita los archivos `values-*.yaml` y cambia:
+Las credenciales se gestionan de forma segura mediante **Secrets de Kubernetes** creados desde el archivo `~/.env`:
 
-- `n8n.basicAuth.password` - Contraseña de acceso a n8n
-- `n8n.encryptionKey` - Clave de encriptación (32 caracteres)
-- `postgresql.auth.password` - Contraseña de PostgreSQL
-- `ingress.certManager.email` - Email para Let's Encrypt
+```bash
+# Cargar variables y crear todos los Secrets
+source ~/.env && ./scripts/create-secrets.sh all
+
+# O crear solo un entorno específico
+source ~/.env && ./scripts/create-secrets.sh dev
+```
+
+Esto creará los siguientes Secrets:
+- `n8n-dev-auth`, `n8n-pre-auth`, `n8n-pro-auth` (credenciales de n8n)
+- `dev-postgresql`, `pre-postgresql`, `pro-postgresql` (credenciales de BD)
+
+**Nota:** El archivo `~/.env` contiene las contraseñas generadas automáticamente. Nunca se sube a Git.
 
 ### 4. Desplegar n8n
 

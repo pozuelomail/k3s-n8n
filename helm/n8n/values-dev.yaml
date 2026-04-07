@@ -35,18 +35,24 @@ resources:
     cpu: 250m
     memory: 512Mi
 
+# ============================================
+# VALUES PARA ENTORNO DE DESARROLLO (dev)
+# Las credenciales se leen de Secrets de Kubernetes
+# ============================================
+
 n8n:
   basicAuth:
     enabled: true
-    username: admin
-    password: dev-password-change-me
-  encryptionKey: dev-encryption-key-change-me-32chars!!
+  # Los Secrets se crean con: source ~/.env && ./scripts/create-secrets.sh dev
+  existingAuthSecret: "n8n-dev-auth"
 
 postgresql:
   enabled: true
   auth:
+    # Secret creado previamente
+    existingSecret: "dev-postgresql"
+    # Valores para referencia (no se usan si existingSecret está definido)
     username: n8n_dev
-    password: dev-db-password-change-me
     database: n8n_dev
   primary:
     persistence:

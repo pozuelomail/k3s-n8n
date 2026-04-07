@@ -42,12 +42,16 @@ resources:
     cpu: 1000m
     memory: 2Gi
 
+# ============================================
+# VALUES PARA ENTORNO DE PRODUCCIÓN (pro)
+# Las credenciales se leen de Secrets de Kubernetes
+# ============================================
+
 n8n:
   basicAuth:
     enabled: true
-    username: admin
-    password: PRODUCTION_SECURE_PASSWORD_CHANGE_ME
-  encryptionKey: PRODUCTION_ENCRYPTION_KEY_CHANGE_ME_32CH
+  # Los Secrets se crean con: source ~/.env && ./scripts/create-secrets.sh pro
+  existingAuthSecret: "n8n-pro-auth"
   executions:
     mode: regular
     timeout: 3600
@@ -61,8 +65,10 @@ env:
 postgresql:
   enabled: true
   auth:
+    # Secret creado previamente
+    existingSecret: "pro-postgresql"
+    # Valores para referencia (no se usan si existingSecret está definido)
     username: n8n_pro
-    password: PRODUCTION_DB_PASSWORD_CHANGE_ME
     database: n8n_pro
   primary:
     persistence:

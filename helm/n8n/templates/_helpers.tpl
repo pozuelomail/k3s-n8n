@@ -45,3 +45,14 @@ Selector labels
 app.kubernetes.io/name: {{ include "n8n.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Auth secret name - usa existingAuthSecret si está definido, sino genera uno nuevo
+*/}}
+{{- define "n8n.authSecretName" -}}
+{{- if .Values.n8n.existingAuthSecret -}}
+{{- .Values.n8n.existingAuthSecret -}}
+{{- else -}}
+{{- include "n8n.fullname" . }}-auth
+{{- end -}}
+{{- end }}
