@@ -5,7 +5,7 @@
 environment: pro
 
 namespace:
-  create: true
+  create: false
   name: n8n-pro
 
 replicaCount: 1
@@ -53,6 +53,7 @@ env:
   N8N_METRICS: "true"
   N8N_DIAGNOSTICS_ENABLED: "false"
   N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+  N8N_RUNNERS_ENABLED: "true"
 
 postgresql:
   enabled: true
@@ -60,21 +61,16 @@ postgresql:
     existingSecret: "pro-postgresql"
     username: n8n_pro
     database: n8n_pro
-    secretKeys:
-      adminPasswordKey: postgres-password
-      userPasswordKey: password
-  primary:
-    persistence:
-      enabled: true
-      size: 8Gi
-      storageClass: local-path
-    resources:
-      limits:
-        cpu: 1000m
-        memory: 1Gi
-      requests:
-        cpu: 250m
-        memory: 512Mi
+  persistence:
+    size: 8Gi
+    storageClass: local-path
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
 
 networkPolicy:
   enabled: true

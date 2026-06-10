@@ -2,10 +2,5 @@ apiVersion: v2
 name: n8n
 description: n8n workflow automation — k3s deployment with nginx ingress
 type: application
-version: 2.0.0
+version: 2.1.0
 appVersion: "1.91.3"
-dependencies:
-  - name: postgresql
-    version: "15.x.x"
-    repository: https://charts.bitnami.com/bitnami
-    condition: postgresql.enabled

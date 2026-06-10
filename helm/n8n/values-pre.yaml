@@ -5,7 +5,7 @@
 environment: pre
 
 namespace:
-  create: true
+  create: false
   name: n8n-pre
 
 replicaCount: 1
@@ -53,18 +53,13 @@ postgresql:
     existingSecret: "pre-postgresql"
     username: n8n_pre
     database: n8n_pre
-    secretKeys:
-      adminPasswordKey: postgres-password
-      userPasswordKey: password
-  primary:
-    persistence:
-      enabled: true
-      size: 10Gi
-      storageClass: local-path
-    resources:
-      limits:
-        cpu: 1000m
-        memory: 1Gi
-      requests:
-        cpu: 250m
-        memory: 512Mi
+  persistence:
+    size: 10Gi
+    storageClass: local-path
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi

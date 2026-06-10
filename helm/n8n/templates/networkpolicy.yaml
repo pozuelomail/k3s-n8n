@@ -48,7 +48,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "n8n.fullname" . }}-postgresql
+  name: {{ include "n8n.fullname" . }}-postgresql-access
   namespace: {{ .Values.namespace.name | default .Release.Namespace }}
   labels:
     {{- include "n8n.labels" . | nindent 4 }}

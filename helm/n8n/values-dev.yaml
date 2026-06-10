@@ -5,7 +5,7 @@
 environment: dev
 
 namespace:
-  create: true
+  create: false
   name: n8n-dev
 
 replicaCount: 1
@@ -53,18 +53,13 @@ postgresql:
     existingSecret: "dev-postgresql"
     username: n8n_dev
     database: n8n_dev
-    secretKeys:
-      adminPasswordKey: postgres-password
-      userPasswordKey: password
-  primary:
-    persistence:
-      enabled: true
-      size: 5Gi
-      storageClass: local-path
-    resources:
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      requests:
-        cpu: 100m
-        memory: 256Mi
+  persistence:
+    size: 5Gi
+    storageClass: local-path
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi

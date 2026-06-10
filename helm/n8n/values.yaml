@@ -6,6 +6,7 @@ fullnameOverride: ""
 namespace:
   create: false
   name: n8n
+  # namespace.create: false — siempre usar --create-namespace en helm upgrade --install
 
 replicaCount: 1
 
@@ -86,22 +87,20 @@ env: {}
 
 postgresql:
   enabled: true
+  image:
+    repository: postgres
+    tag: "17"
   auth:
     username: n8n
     database: n8n
     existingSecret: ""
-    secretKeys:
-      adminPasswordKey: postgres-password
-      userPasswordKey: password
-  primary:
-    persistence:
-      enabled: true
-      size: 5Gi
-      storageClass: local-path
-    resources:
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      requests:
-        cpu: 100m
-        memory: 256Mi
+  persistence:
+    size: 5Gi
+    storageClass: local-path
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
