@@ -8,30 +8,29 @@ namespace:
   create: true
   name: n8n-pro
 
-replicaCount: 2
+replicaCount: 1
 
 image:
-  tag: "1.50.0"
+  tag: "1.91.3"
 
 ingress:
   enabled: true
-  className: traefik
+  className: nginx
   host: n8n.qforexwin.com
   annotations:
     external-dns.alpha.kubernetes.io/hostname: n8n.qforexwin.com
-    # Rate limiting para producción
-    traefik.ingress.kubernetes.io/ratelimit.average: "100"
-    traefik.ingress.kubernetes.io/ratelimit.burst: "50"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
   certManager:
-    issuer: letsencrypt-prod  # Usar el ClusterIssuer existente
-  annotations:
-    # Rate limiting para producción
-    traefik.ingress.kubernetes.io/ratelimit.average: "100"
-    traefik.ingress.kubernetes.io/ratelimit.burst: "50"
+    issuer: letsencrypt-prod
 
 persistence:
   enabled: true
-  size: 50Gi
+  size: 10Gi
   storageClass: local-path
 
 resources:
@@ -39,18 +38,10 @@ resources:
     cpu: 2000m
     memory: 4Gi
   requests:
-    cpu: 1000m
-    memory: 2Gi
-
-# ============================================
-# VALUES PARA ENTORNO DE PRODUCCIÓN (pro)
-# Las credenciales se leen de Secrets de Kubernetes
-# ============================================
+    cpu: 500m
+    memory: 1Gi
 
 n8n:
-  basicAuth:
-    enabled: true
-  # Los Secrets se crean con: source ~/.env && ./scripts/create-secrets.sh pro
   existingAuthSecret: "n8n-pro-auth"
   executions:
     mode: regular
@@ -58,27 +49,32 @@ n8n:
     timeoutMax: 7200
 
 env:
-  # Configuraciones adicionales de producción
   N8N_LOG_LEVEL: warn
   N8N_METRICS: "true"
+  N8N_DIAGNOSTICS_ENABLED: "false"
+  N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
 
 postgresql:
   enabled: true
   auth:
-    # Secret creado previamente
     existingSecret: "pro-postgresql"
-    # Valores para referencia (no se usan si existingSecret está definido)
     username: n8n_pro
     database: n8n_pro
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
   primary:
     persistence:
       enabled: true
-      size: 100Gi
+      size: 8Gi
       storageClass: local-path
     resources:
       limits:
-        cpu: 2000m
-        memory: 2Gi
-      requests:
-        cpu: 500m
+        cpu: 1000m
         memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+networkPolicy:
+  enabled: true

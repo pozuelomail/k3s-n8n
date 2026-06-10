@@ -1,11 +1,11 @@
 apiVersion: v2
 name: n8n
-description: Helm chart for n8n workflow automation tool
+description: n8n workflow automation — k3s deployment with nginx ingress
 type: application
-version: 1.0.0
-appVersion: "1.50.0"
+version: 2.0.0
+appVersion: "1.91.3"
 dependencies:
   - name: postgresql
-    version: 14.x.x
+    version: "15.x.x"
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled

@@ -5,17 +5,8 @@ metadata:
   name: {{ include "n8n.fullname" . }}
   namespace: {{ .Values.namespace.name | default .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: n8n
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "n8n.labels" . | nindent 4 }}
   annotations:
-    {{- if eq .Values.ingress.className "traefik" }}
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    {{- end }}
-    {{- if eq .Values.ingress.className "nginx" }}
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    {{- end }}
     cert-manager.io/cluster-issuer: {{ .Values.ingress.certManager.issuer }}
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}

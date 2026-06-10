@@ -1,6 +1,3 @@
-# Valores base del chart n8n
-# Sobreescribir con values-dev.yaml, values-pre.yaml, values-pro.yaml según el entorno
-
 environment: dev
 
 nameOverride: ""
@@ -15,7 +12,7 @@ replicaCount: 1
 image:
   repository: n8nio/n8n
   pullPolicy: IfNotPresent
-  tag: ""
+  tag: ""  # Sobreescribir en values-ENV.yaml — nunca usar latest en pro
 
 service:
   type: ClusterIP
@@ -23,36 +20,63 @@ service:
 
 ingress:
   enabled: true
-  className: traefik
+  className: nginx
   host: n8n.qforexwin.com
   annotations:
-    # external-dns ya está instalado - se auto-configurará
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     external-dns.alpha.kubernetes.io/hostname: n8n.qforexwin.com
   certManager:
-    issuer: letsencrypt-prod  # Todos los entornos usan letsencrypt-prod
+    issuer: letsencrypt-prod
 
 persistence:
   enabled: true
-  size: 10Gi
+  size: 5Gi
   accessMode: ReadWriteOnce
   storageClass: local-path
+  existingClaim: ""
 
 resources:
   limits:
     cpu: 1000m
     memory: 2Gi
   requests:
-    cpu: 500m
-    memory: 1Gi
+    cpu: 250m
+    memory: 512Mi
 
-# ============================================
-# Configuración de n8n
-# Las credenciales se leen de Secrets de Kubernetes
-# creados previamente desde ~/.env
-# ============================================
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+networkPolicy:
+  enabled: true
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
 n8n:
-  basicAuth:
-    enabled: true
+  existingAuthSecret: ""
   executions:
     mode: regular
     timeout: 3600
@@ -60,29 +84,24 @@ n8n:
 
 env: {}
 
-# ============================================
-# Configuración de PostgreSQL subchart
-# El Secret debe existir previamente (creado con create-secrets.sh)
-# ============================================
 postgresql:
   enabled: true
   auth:
-    host: ""
-    # Estos valores se ignoran si existingSecret está definido
     username: n8n
-    password: ""
     database: n8n
-    # Secret creado previamente por create-secrets.sh
     existingSecret: ""
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
   primary:
     persistence:
       enabled: true
-      size: 20Gi
+      size: 5Gi
       storageClass: local-path
     resources:
       limits:
-        cpu: 1000m
-        memory: 1Gi
-      requests:
-        cpu: 250m
+        cpu: 500m
         memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi

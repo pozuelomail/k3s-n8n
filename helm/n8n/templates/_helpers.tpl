@@ -47,7 +47,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Auth secret name - usa existingAuthSecret si está definido, sino genera uno nuevo
+Auth secret name
 */}}
 {{- define "n8n.authSecretName" -}}
 {{- if .Values.n8n.existingAuthSecret -}}
@@ -55,4 +55,15 @@ Auth secret name - usa existingAuthSecret si está definido, sino genera uno nue
 {{- else -}}
 {{- include "n8n.fullname" . }}-auth
 {{- end -}}
+{{- end }}
+
+{{/*
+ServiceAccount name
+*/}}
+{{- define "n8n.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "n8n.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
 {{- end }}

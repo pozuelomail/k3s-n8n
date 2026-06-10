@@ -11,16 +11,18 @@ namespace:
 replicaCount: 1
 
 image:
-  tag: "1.50.0"
+  tag: "1.91.3"
 
 ingress:
   enabled: true
-  className: traefik
+  className: nginx
   host: n8n-pre.qforexwin.com
   annotations:
     external-dns.alpha.kubernetes.io/hostname: n8n-pre.qforexwin.com
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   certManager:
-    issuer: letsencrypt-prod  # Usar el ClusterIssuer de producción
+    issuer: letsencrypt-prod
 
 persistence:
   enabled: true
@@ -32,32 +34,32 @@ resources:
     cpu: 1000m
     memory: 2Gi
   requests:
-    cpu: 500m
-    memory: 1Gi
-
-# ============================================
-# VALUES PARA ENTORNO DE PREPRODUCCIÓN (pre)
-# Las credenciales se leen de Secrets de Kubernetes
-# ============================================
+    cpu: 250m
+    memory: 512Mi
 
 n8n:
-  basicAuth:
-    enabled: true
-  # Los Secrets se crean con: source ~/.env && ./scripts/create-secrets.sh pre
   existingAuthSecret: "n8n-pre-auth"
+  executions:
+    mode: regular
+    timeout: 3600
+    timeoutMax: 7200
+
+env:
+  N8N_DIAGNOSTICS_ENABLED: "false"
 
 postgresql:
   enabled: true
   auth:
-    # Secret creado previamente
     existingSecret: "pre-postgresql"
-    # Valores para referencia (no se usan si existingSecret está definido)
     username: n8n_pre
     database: n8n_pre
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
   primary:
     persistence:
       enabled: true
-      size: 20Gi
+      size: 10Gi
       storageClass: local-path
     resources:
       limits:
