@@ -71,14 +71,49 @@ create_secrets_for_env() {
     echo "OK — Secrets creados para $env"
 }
 
+create_social_secrets_for_env() {
+    local env=$1
+    local namespace="n8n-${env}"
+    local ENV_UPPER
+    ENV_UPPER=$(echo "$env" | tr '[:lower:]' '[:upper:]')
+
+    local anthropic_key="${ANTHROPIC_API_KEY:-}"
+    local unsplash_key="${UNSPLASH_ACCESS_KEY:-}"
+    local meta_page_id="${META_PAGE_ID:-}"
+    local meta_ig_id="${META_IG_ACCOUNT_ID:-}"
+    local meta_token="${META_PAGE_ACCESS_TOKEN:-}"
+
+    if [[ -z "$anthropic_key" || -z "$unsplash_key" || -z "$meta_page_id" || -z "$meta_ig_id" || -z "$meta_token" ]]; then
+        echo "AVISO: Faltan variables para social-publisher en '$env'. Secret omitido."
+        echo "  Requeridas: ANTHROPIC_API_KEY, UNSPLASH_ACCESS_KEY, META_PAGE_ID, META_IG_ACCOUNT_ID, META_PAGE_ACCESS_TOKEN"
+        return 0
+    fi
+
+    echo "Creando Secret social-publisher-${env}..."
+    kubectl create secret generic "social-publisher-${env}" \
+        --from-literal=ANTHROPIC_API_KEY="${anthropic_key}" \
+        --from-literal=UNSPLASH_ACCESS_KEY="${unsplash_key}" \
+        --from-literal=META_PAGE_ID="${meta_page_id}" \
+        --from-literal=META_IG_ACCOUNT_ID="${meta_ig_id}" \
+        --from-literal=META_PAGE_ACCESS_TOKEN="${meta_token}" \
+        -n "$namespace" \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    echo "OK — Secret social-publisher-${env} creado"
+}
+
 case $ENV in
     dev|pre|pro)
         create_secrets_for_env "$ENV"
+        create_social_secrets_for_env "$ENV"
         ;;
     all)
         create_secrets_for_env "dev"
         create_secrets_for_env "pre"
         create_secrets_for_env "pro"
+        create_social_secrets_for_env "dev"
+        create_social_secrets_for_env "pre"
+        create_social_secrets_for_env "pro"
         ;;
     *)
         echo "Uso: $0 [dev|pre|pro|all]"
