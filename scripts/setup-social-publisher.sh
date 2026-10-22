@@ -118,23 +118,28 @@ fi
 # Nada de variables de entorno: N8N_BLOCK_ENV_ACCESS_IN_NODE=true impide leerlas desde los flujos.
 section "5. Crear o actualizar credenciales en n8n"
 
-upsert_cred() {   # nombre, nombre de cabecera, valor  → imprime el id
-  local name="$1" header="$2" value="$3" id body
+# Solo se actualizan credenciales que creó este script (ids guardados en un fichero local, 600).
+# Nunca se busca por nombre: otra credencial con el mismo nombre podría ser de otro usuario.
+STATE="${HOME}/.config/k3s-n8n/social-publisher-${ENV}.creds"
+mkdir -p "$(dirname "$STATE")"; touch "$STATE"; chmod 600 "$STATE"
+
+upsert_cred() {   # clave, nombre, nombre de cabecera, valor  → imprime el id
+  local key="$1" name="$2" header="$3" value="$4" id body
   body=$(jq -n --arg n "$header" --arg v "$value" '{name:$n, value:$v}')
-  id=$(n8n_api GET "$N8N_BASE/credentials?limit=250" | jq -r --arg n "$name" '.data[]? | select(.name==$n) | .id' | head -1)
-  if [[ -n "$id" ]]; then
-    n8n_api PATCH "$N8N_BASE/credentials/$id" -d "$(jq -n --argjson d "$body" '{data:$d}')" >/dev/null
-  else
-    id=$(n8n_api POST "$N8N_BASE/credentials" \
-      -d "$(jq -n --arg nm "$name" --argjson d "$body" '{name:$nm, type:"httpHeaderAuth", data:$d}')" | jq -r '.id // empty')
+  id=$(grep "^${key}=" "$STATE" | cut -d= -f2)
+  if [[ -n "$id" ]] && n8n_api PATCH "$N8N_BASE/credentials/$id" -d "$(jq -n --argjson d "$body" '{data:$d}')" | jq -e '.id' >/dev/null 2>&1; then
+    echo "$id"; return
   fi
+  id=$(n8n_api POST "$N8N_BASE/credentials" \
+    -d "$(jq -n --arg nm "$name" --argjson d "$body" '{name:$nm, type:"httpHeaderAuth", data:$d}')" | jq -r '.id // empty')
   [[ -n "$id" ]] || { err "No se pudo crear la credencial «$name»"; exit 1; }
+  sed -i "/^${key}=/d" "$STATE"; echo "${key}=${id}" >> "$STATE"
   echo "$id"
 }
 
-CRED_ANTHROPIC=$(upsert_cred "Anthropic API (social-publisher)" "x-api-key" "$ANTHROPIC_API_KEY")
-CRED_UNSPLASH=$(upsert_cred "Unsplash (social-publisher)" "Authorization" "Client-ID $UNSPLASH_ACCESS_KEY")
-CRED_META=$(upsert_cred "Meta Page Token (social-publisher)" "Authorization" "Bearer $META_PAGE_ACCESS_TOKEN")
+CRED_ANTHROPIC=$(upsert_cred anthropic "Anthropic API (social-publisher)" "x-api-key" "$ANTHROPIC_API_KEY")
+CRED_UNSPLASH=$(upsert_cred unsplash "Unsplash (social-publisher)" "Authorization" "Client-ID $UNSPLASH_ACCESS_KEY")
+CRED_META=$(upsert_cred meta "Meta Page Token (social-publisher)" "Authorization" "Bearer $META_PAGE_ACCESS_TOKEN")
 ok "Credenciales listas"
 
 # ─── Paso 6: Importar workflow en n8n ─────────────────────────────────────────
