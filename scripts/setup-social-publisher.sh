@@ -56,7 +56,7 @@ fi
 # ─── Paso 2: Verificar conectividad con Meta ──────────────────────────────────
 section "2. Verificar token de Meta"
 
-FB_RESP=$(curl -s "https://graph.facebook.com/v19.0/${META_PAGE_ID}?fields=name,id&access_token=${META_PAGE_ACCESS_TOKEN}")
+FB_RESP=$(curl -s -H "Authorization: Bearer ${META_PAGE_ACCESS_TOKEN}" "https://graph.facebook.com/v19.0/${META_PAGE_ID}?fields=name,id")
 FB_NAME=$(echo "$FB_RESP" | jq -r '.name // empty')
 FB_ERR=$(echo "$FB_RESP"  | jq -r '.error.message // empty')
 
@@ -68,7 +68,7 @@ else
   exit 1
 fi
 
-IG_RESP=$(curl -s "https://graph.facebook.com/v19.0/${META_IG_ACCOUNT_ID}?fields=name,username&access_token=${META_PAGE_ACCESS_TOKEN}")
+IG_RESP=$(curl -s -H "Authorization: Bearer ${META_PAGE_ACCESS_TOKEN}" "https://graph.facebook.com/v19.0/${META_IG_ACCOUNT_ID}?fields=name,username")
 IG_USER=$(echo "$IG_RESP" | jq -r '.username // .name // empty')
 IG_ERR=$(echo "$IG_RESP"  | jq -r '.error.message // empty')
 
@@ -113,47 +113,52 @@ else
   exit 1
 fi
 
-# ─── Paso 5: Crear secret en Kubernetes ───────────────────────────────────────
-section "5. Crear secret social-publisher-${ENV} en Kubernetes"
+# ─── Paso 5: Credenciales en n8n ──────────────────────────────────────────────
+# Las claves se guardan cifradas como credenciales de n8n y solo las usa este flujo.
+# Nada de variables de entorno: N8N_BLOCK_ENV_ACCESS_IN_NODE=true impide leerlas desde los flujos.
+section "5. Crear o actualizar credenciales en n8n"
 
-kubectl create secret generic "social-publisher-${ENV}" \
-  --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
-  --from-literal=UNSPLASH_ACCESS_KEY="${UNSPLASH_ACCESS_KEY}" \
-  --from-literal=META_PAGE_ID="${META_PAGE_ID}" \
-  --from-literal=META_IG_ACCOUNT_ID="${META_IG_ACCOUNT_ID}" \
-  --from-literal=META_PAGE_ACCESS_TOKEN="${META_PAGE_ACCESS_TOKEN}" \
-  -n "${NAMESPACE}" \
-  --dry-run=client -o yaml | kubectl apply -f -
+upsert_cred() {   # nombre, nombre de cabecera, valor  → imprime el id
+  local name="$1" header="$2" value="$3" id body
+  body=$(jq -n --arg n "$header" --arg v "$value" '{name:$n, value:$v}')
+  id=$(n8n_api GET "$N8N_BASE/credentials?limit=250" | jq -r --arg n "$name" '.data[]? | select(.name==$n) | .id' | head -1)
+  if [[ -n "$id" ]]; then
+    n8n_api PATCH "$N8N_BASE/credentials/$id" -d "$(jq -n --argjson d "$body" '{data:$d}')" >/dev/null
+  else
+    id=$(n8n_api POST "$N8N_BASE/credentials" \
+      -d "$(jq -n --arg nm "$name" --argjson d "$body" '{name:$nm, type:"httpHeaderAuth", data:$d}')" | jq -r '.id // empty')
+  fi
+  [[ -n "$id" ]] || { err "No se pudo crear la credencial «$name»"; exit 1; }
+  echo "$id"
+}
 
-ok "Secret creado"
+CRED_ANTHROPIC=$(upsert_cred "Anthropic API (social-publisher)" "x-api-key" "$ANTHROPIC_API_KEY")
+CRED_UNSPLASH=$(upsert_cred "Unsplash (social-publisher)" "Authorization" "Client-ID $UNSPLASH_ACCESS_KEY")
+CRED_META=$(upsert_cred "Meta Page Token (social-publisher)" "Authorization" "Bearer $META_PAGE_ACCESS_TOKEN")
+ok "Credenciales listas"
 
-# ─── Paso 6: Redeploy para inyectar el secret como env vars ───────────────────
-section "6. Redeploy de n8n (inyectar credenciales vía envFrom)"
+# ─── Paso 6: Importar workflow en n8n ─────────────────────────────────────────
+section "6. Importar workflow en n8n"
 
-echo "  Ejecutando: ./scripts/deploy.sh ${ENV}"
-echo ""
-(cd "$REPO_ROOT" && bash scripts/deploy.sh "$ENV")
+WF_PAYLOAD=$(sed -e "s/__CRED_ANTHROPIC__/${CRED_ANTHROPIC}/g" -e "s/__CRED_UNSPLASH__/${CRED_UNSPLASH}/g" \
+  -e "s/__CRED_META__/${CRED_META}/g" -e "s/__META_PAGE_ID__/${META_PAGE_ID}/g" \
+  -e "s/__META_IG_ACCOUNT_ID__/${META_IG_ACCOUNT_ID}/g" "$WORKFLOW_JSON")
+echo "$WF_PAYLOAD" | jq -e . >/dev/null
 
-# ─── Paso 7: Importar workflow en n8n ─────────────────────────────────────────
-section "7. Importar workflow en n8n"
-
-# Verificar si ya existe
 EXISTING_WF=$(n8n_api GET "$N8N_BASE/workflows" | jq -r '.data[] | select(.name == "Social Media Publisher (FB + IG)") | .id' 2>/dev/null || echo "")
 
 if [[ -n "$EXISTING_WF" ]]; then
   ok "Workflow ya existe (ID: $EXISTING_WF) — actualizando..."
-  WF_PAYLOAD=$(cat "$WORKFLOW_JSON")
   n8n_api PUT "$N8N_BASE/workflows/$EXISTING_WF" -d "$WF_PAYLOAD" | jq '{id, name}'
   WF_ID="$EXISTING_WF"
 else
-  WF_PAYLOAD=$(cat "$WORKFLOW_JSON")
   CREATED=$(n8n_api POST "$N8N_BASE/workflows" -d "$WF_PAYLOAD")
   WF_ID=$(echo "$CREATED" | jq -r '.id')
   ok "Workflow creado (ID: $WF_ID)"
 fi
 
-# ─── Paso 8: Activar el workflow ──────────────────────────────────────────────
-section "8. Activar workflow"
+# ─── Paso 7: Activar el workflow ──────────────────────────────────────────────
+section "7. Activar workflow"
 
 n8n_api POST "$N8N_BASE/workflows/$WF_ID/activate" | jq '{id, name, active}'
 ok "Workflow activo — publicará L-V a las 10:00"

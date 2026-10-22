@@ -54,6 +54,7 @@ env:
   N8N_DIAGNOSTICS_ENABLED: "false"
   N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
   N8N_UNVERIFIED_PACKAGES_ENABLED: "false"     # sin paquetes de la comunidad
+  N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"         # los flujos no leen variables de entorno (claves en credenciales)
   N8N_RUNNERS_TASK_TIMEOUT: "300"
   N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES: "268435456"   # 256 MiB (futuro valor por defecto)
   N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES: "1000"
@@ -82,8 +83,3 @@ postgresql:
 
 networkPolicy:
   enabled: true
-
-extraEnvFrom:
-  - secretRef:
-      name: social-publisher-pro
-      optional: true

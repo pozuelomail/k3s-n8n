@@ -6,7 +6,10 @@
       "name": "Programar Publicación",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [120, 300],
+      "position": [
+        120,
+        300
+      ],
       "parameters": {
         "rule": {
           "interval": [
@@ -23,7 +26,10 @@
       "name": "Seleccionar Tema del Día",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [340, 300],
+      "position": [
+        340,
+        300
+      ],
       "parameters": {
         "jsCode": "const topics = [\n  'un logro o hito reciente del negocio',\n  'un consejo profesional para emprendedores',\n  'una reflexión sobre liderazgo y crecimiento',\n  'una pregunta para generar engagement con la comunidad',\n  'novedades o próximos proyectos del negocio'\n];\nconst idx = new Date().getDay() % topics.length;\nreturn [{ json: { topic: topics[idx] } }];"
       }
@@ -33,22 +39,35 @@
       "name": "Generar Contenido con Claude",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [560, 300],
+      "position": [
+        560,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://api.anthropic.com/v1/messages",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {"name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}"},
-            {"name": "anthropic-version", "value": "2023-06-01"}
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 512, messages: [{ role: 'user', content: 'Eres un creador de contenido para redes sociales de una marca/negocio personal. Genera un post sobre: ' + $json.topic + '. Devuelve SOLO un JSON válido sin markdown ni texto adicional: {\"caption\": \"texto en español máximo 280 caracteres con 5 hashtags relevantes al final\", \"image_keyword\": \"una sola palabra en inglés para buscar foto en Unsplash\"}' }] }) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__CRED_ANTHROPIC__",
+          "name": "Anthropic API (social-publisher)"
+        }
       }
     },
     {
@@ -56,7 +75,10 @@
       "name": "Parsear Respuesta de Claude",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [780, 300],
+      "position": [
+        780,
+        300
+      ],
       "parameters": {
         "jsCode": "const text = $input.first().json.content[0].text.trim();\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (e) {\n  const match = text.match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n  else throw new Error('Claude no devolvió JSON válido: ' + text);\n}\nif (!parsed.caption || !parsed.image_keyword) {\n  throw new Error('Faltan campos en la respuesta de Claude: ' + JSON.stringify(parsed));\n}\nreturn [{ json: { caption: parsed.caption, image_keyword: parsed.image_keyword } }];"
       }
@@ -66,25 +88,40 @@
       "name": "Buscar Imagen en Unsplash",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1000, 300],
+      "position": [
+        1000,
+        300
+      ],
       "parameters": {
         "method": "GET",
         "url": "https://api.unsplash.com/search/photos",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {"name": "Authorization", "value": "={{ 'Client-ID ' + $env.UNSPLASH_ACCESS_KEY }}"}
-          ]
-        },
+        "sendHeaders": false,
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            {"name": "query", "value": "={{ $json.image_keyword }}"},
-            {"name": "per_page", "value": "5"},
-            {"name": "orientation", "value": "landscape"}
+            {
+              "name": "query",
+              "value": "={{ $json.image_keyword }}"
+            },
+            {
+              "name": "per_page",
+              "value": "5"
+            },
+            {
+              "name": "orientation",
+              "value": "landscape"
+            }
           ]
         },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__CRED_UNSPLASH__",
+          "name": "Unsplash (social-publisher)"
+        }
       }
     },
     {
@@ -92,7 +129,10 @@
       "name": "Extraer URL de Imagen",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1220, 300],
+      "position": [
+        1220,
+        300
+      ],
       "parameters": {
         "jsCode": "const results = $input.first().json.results;\nif (!results || results.length === 0) {\n  throw new Error('Unsplash: sin resultados para la keyword');\n}\nconst imageUrl = results[0].urls.regular;\nconst caption = $('Parsear Respuesta de Claude').first().json.caption;\nreturn [{ json: { image_url: imageUrl, caption } }];"
       }
@@ -102,20 +142,37 @@
       "name": "Publicar en Facebook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1440, 160],
+      "position": [
+        1440,
+        160
+      ],
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v19.0/' + $env.META_PAGE_ID + '/photos' }}",
+        "url": "https://graph.facebook.com/v19.0/__META_PAGE_ID__/photos",
         "sendBody": true,
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            {"name": "url", "value": "={{ $json.image_url }}"},
-            {"name": "message", "value": "={{ $json.caption }}"},
-            {"name": "access_token", "value": "={{ $env.META_PAGE_ACCESS_TOKEN }}"}
+            {
+              "name": "url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.caption }}"
+            }
           ]
         },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__CRED_META__",
+          "name": "Meta Page Token (social-publisher)"
+        }
       }
     },
     {
@@ -123,20 +180,37 @@
       "name": "Crear Contenedor Instagram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1440, 440],
+      "position": [
+        1440,
+        440
+      ],
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v19.0/' + $env.META_IG_ACCOUNT_ID + '/media' }}",
+        "url": "https://graph.facebook.com/v19.0/__META_IG_ACCOUNT_ID__/media",
         "sendBody": true,
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            {"name": "image_url", "value": "={{ $json.image_url }}"},
-            {"name": "caption", "value": "={{ $json.caption }}"},
-            {"name": "access_token", "value": "={{ $env.META_PAGE_ACCESS_TOKEN }}"}
+            {
+              "name": "image_url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            }
           ]
         },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__CRED_META__",
+          "name": "Meta Page Token (social-publisher)"
+        }
       }
     },
     {
@@ -144,7 +218,10 @@
       "name": "Esperar Procesamiento",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [1660, 440],
+      "position": [
+        1660,
+        440
+      ],
       "webhookId": "a7f3b2c1-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
       "parameters": {
         "amount": 5,
@@ -156,55 +233,135 @@
       "name": "Publicar en Instagram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1880, 440],
+      "position": [
+        1880,
+        440
+      ],
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v19.0/' + $env.META_IG_ACCOUNT_ID + '/media_publish' }}",
+        "url": "https://graph.facebook.com/v19.0/__META_IG_ACCOUNT_ID__/media_publish",
         "sendBody": true,
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            {"name": "creation_id", "value": "={{ $json.id }}"},
-            {"name": "access_token", "value": "={{ $env.META_PAGE_ACCESS_TOKEN }}"}
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            }
           ]
         },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__CRED_META__",
+          "name": "Meta Page Token (social-publisher)"
+        }
       }
     }
   ],
   "connections": {
     "Programar Publicación": {
-      "main": [[{"node": "Seleccionar Tema del Día", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Seleccionar Tema del Día",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Seleccionar Tema del Día": {
-      "main": [[{"node": "Generar Contenido con Claude", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Generar Contenido con Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Generar Contenido con Claude": {
-      "main": [[{"node": "Parsear Respuesta de Claude", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta de Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parsear Respuesta de Claude": {
-      "main": [[{"node": "Buscar Imagen en Unsplash", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Buscar Imagen en Unsplash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Imagen en Unsplash": {
-      "main": [[{"node": "Extraer URL de Imagen", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Extraer URL de Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extraer URL de Imagen": {
-      "main": [[
-        {"node": "Publicar en Facebook", "type": "main", "index": 0},
-        {"node": "Crear Contenedor Instagram", "type": "main", "index": 0}
-      ]]
+      "main": [
+        [
+          {
+            "node": "Publicar en Facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Crear Contenedor Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Crear Contenedor Instagram": {
-      "main": [[{"node": "Esperar Procesamiento", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Esperar Procesamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Esperar Procesamiento": {
-      "main": [[{"node": "Publicar en Instagram", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Publicar en Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true,
+    "saveManualExecutions": false,
     "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all"
+    "saveDataSuccessExecution": "none"
   }
 }
