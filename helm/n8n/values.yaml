@@ -85,6 +85,19 @@ n8n:
 
 env: {}
 
+# Ejecutores de código en contenedor aparte (n8n 2: el modo interno está en desuso).
+# El token va en un Secret creado a mano: kubectl -n <ns> create secret generic <authSecret> --from-literal=token=$(openssl rand -hex 32)
+runners:
+  external: false
+  authSecret: ""
+  image:
+    repository: n8nio/runners
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 1000m, memory: 1Gi}
+
+extraEnvFrom: []
+
 postgresql:
   enabled: true
   image:

@@ -3,4 +3,4 @@ name: n8n
 description: n8n workflow automation — k3s deployment with nginx ingress
 type: application
 version: 2.1.0
-appVersion: "1.91.3"
+appVersion: "2.44.6"

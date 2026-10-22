@@ -11,7 +11,7 @@ namespace:
 replicaCount: 1
 
 image:
-  tag: "1.91.3"
+  tag: "2.44.6"
 
 ingress:
   enabled: true
@@ -53,7 +53,15 @@ env:
   N8N_METRICS: "true"
   N8N_DIAGNOSTICS_ENABLED: "false"
   N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
-  N8N_RUNNERS_ENABLED: "true"
+  N8N_UNVERIFIED_PACKAGES_ENABLED: "false"     # sin paquetes de la comunidad
+  N8N_RUNNERS_TASK_TIMEOUT: "300"
+  N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES: "268435456"   # 256 MiB (futuro valor por defecto)
+  N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES: "1000"
+  N8N_MIGRATE_FS_STORAGE_PATH: "true"          # binaryData -> storage (n8n 3)
+
+runners:
+  external: true
+  authSecret: n8n-pro-runners
 
 postgresql:
   enabled: true
@@ -74,3 +82,8 @@ postgresql:
 
 networkPolicy:
   enabled: true
+
+extraEnvFrom:
+  - secretRef:
+      name: social-publisher-pro
+      optional: true

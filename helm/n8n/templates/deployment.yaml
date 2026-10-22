@@ -56,7 +56,7 @@ spec:
                   key: password
             - name: N8N_PORT
               value: "5678"
-            - name: WEBHOOK_URL
+            - name: N8N_WEBHOOK_URL
               value: "https://{{ .Values.ingress.host }}/"
             - name: N8N_PROTOCOL
               value: https
@@ -70,9 +70,22 @@ spec:
               value: "{{ .Values.n8n.executions.timeout | default 3600 }}"
             - name: EXECUTIONS_TIMEOUT_MAX
               value: "{{ .Values.n8n.executions.timeoutMax | default 7200 }}"
+          {{- if .Values.runners.external }}
+            - name: N8N_RUNNERS_MODE
+              value: external
+            - name: N8N_RUNNERS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runners.authSecret }}
+                  key: token
+          {{- end }}
           {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
+          {{- end }}
+          {{- if .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml .Values.extraEnvFrom | nindent 12 }}
           {{- end }}
           volumeMounts:
             - name: data
@@ -97,7 +110,38 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
+        {{- if .Values.runners.external }}
+        # Ejecutores de código (JavaScript y Python) aislados del proceso principal
+        - name: runners
+          image: "{{ .Values.runners.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          env:
+            - name: N8N_RUNNERS_TASK_BROKER_URI
+              value: http://127.0.0.1:5679
+            - name: N8N_RUNNERS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.runners.authSecret }}
+                  key: token
+            - name: N8N_RUNNERS_TASK_TIMEOUT
+              value: {{ .Values.env.N8N_RUNNERS_TASK_TIMEOUT | default "300" | quote }}
+          volumeMounts:
+            - name: runners-tmp
+              mountPath: /tmp
+            - name: runners-home
+              mountPath: /home/runner
+          resources:
+            {{- toYaml .Values.runners.resources | nindent 12 }}
+        {{- end }}
       volumes:
+        {{- if .Values.runners.external }}
+        - name: runners-tmp
+          emptyDir: {}
+        - name: runners-home
+          emptyDir: {}
+        {{- end }}
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
