@@ -67,7 +67,7 @@ helm/n8n/
     ingress.yaml              # nginx-only, cert-manager annotation
     pvc.yaml
     secrets.yaml              # Solo si no hay existingAuthSecret
-    networkpolicy.yaml        # default-deny + allow ingress-nginx + postgres interno
+    networkpolicy.yaml        # default-deny + allow traefik + postgres interno
     hpa.yaml                  # Deshabilitado por defecto
 ```
 
@@ -77,7 +77,7 @@ helm/n8n/
 - `strategy.type: Recreate` — PVC es ReadWriteOnce, rolling update no funciona
 - `replicaCount: 1` en modo `regular` — para 2+ replicas hace falta queue mode con Redis
 - `readOnlyRootFilesystem: true` — n8n escribe en `/home/node/.n8n` (PVC) y `/tmp` (emptyDir)
-- NetworkPolicy habilitada — default-deny, solo ingress desde ingress-nginx y egress a postgres + DNS + HTTPS
+- NetworkPolicy habilitada — default-deny, solo ingress desde Traefik (ns traefik) y egress a postgres + DNS + HTTPS
 - Secrets siempre externos (`existingAuthSecret`, `postgresql.auth.existingSecret`) — nunca en values
 - Ingress siempre `className: nginx` — el ClusterIssuer usa `ingressClassName: nginx` para el solver ACME
 
